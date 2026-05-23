@@ -72,7 +72,8 @@
 <div id="app"></div>
 
 <script>
-const LIFF_ID = '2010167619-NedfyLH7';
+const LIFF_ID      = '2010167619-NedfyLH7';
+const BACKEND_URL  = 'https://checkname-aml-api.onrender.com'; // อัปเดตหลัง deploy backend
 </script>
 
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
@@ -254,10 +255,15 @@ function IOSDevice({ children, width = 402, height = 874, dark = false }) {
 /* ═══════════════════ SUBSCRIPTION CHECK ═══════════════════ */
 
 async function checkSubscription(userId) {
-  // TODO: แทนที่ด้วย API จริง เช่น:
-  // const res = await fetch(`https://your-api.com/check?userId=${userId}`);
-  // return (await res.json()).subscribed;
-  return true; // default: อนุญาตทุก user ที่ login แล้ว
+  try {
+    const res = await fetch(`${BACKEND_URL}/check-subscription?userId=${encodeURIComponent(userId)}`);
+    if (!res.ok) throw new Error('api_error');
+    const data = await res.json();
+    return data.subscribed === true;
+  } catch (e) {
+    console.error('checkSubscription failed:', e);
+    return false; // fail-closed: block access if API unreachable
+  }
 }
 
 /* ═══════════════════ AUTH SCREENS ═══════════════════ */
@@ -270,68 +276,88 @@ const AuthLoading = () => (
       </div>
       <span style={{ position: 'absolute', inset: -8, border: '3px solid var(--emerald)', borderRightColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}/>
     </div>
-    <div style={{ fontFamily: 'var(--display)', fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 8, letterSpacing: '-0.02em' }}>CHECKNAME</div>
-    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--mono)', letterSpacing: '0.06em' }}>กำลังตรวจสอบสิทธิ์...</div>
+    <div style={{ fontFamily: 'var(--display)', fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10, letterSpacing: '-0.02em' }}>CHECKNAME</div>
+    <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--mono)', letterSpacing: '0.06em' }}>กำลังตรวจสอบสิทธิ์การใช้งาน</div>
   </div>
 );
 
-const AuthLogin = ({ ctx }) => (
+const AuthBlocked = ({ ctx }) => (
   <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-    <div style={{ padding: '32px 24px 28px', background: 'linear-gradient(160deg, #0F172A 0%, #1E293B 100%)', display: 'flex', alignItems: 'center', gap: 10 }}>
+    {/* Header */}
+    <div style={{ padding: '32px 24px 24px', background: 'linear-gradient(160deg, #0F172A 0%, #1E293B 100%)', display: 'flex', alignItems: 'center', gap: 10 }}>
       <LogoMark size={22} color="#fff"/>
       <span style={{ fontFamily: 'var(--display)', fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>CHECKNAME</span>
     </div>
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 28px', background: 'var(--paper)' }}>
-      <div style={{ width: 80, height: 80, borderRadius: 24, background: 'var(--emerald-50)', border: '1.5px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 22 }}>
-        <LogoMark size={44}/>
+
+    {/* Body */}
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '36px 24px 110px', background: 'var(--paper)', overflowY: 'auto' }}>
+
+      {/* Lock icon */}
+      <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'var(--navy-50)', border: '1.5px solid var(--navy-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="11" width="18" height="11" rx="2" stroke="var(--navy)" strokeWidth="1.8" fill="none"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="var(--navy)" strokeWidth="1.8" strokeLinecap="round"/>
+        </svg>
       </div>
-      <h1 style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 800, color: 'var(--navy)', margin: '0 0 10px', letterSpacing: '-0.02em', textAlign: 'center' }}>ยืนยันตัวตนด้วย LINE</h1>
-      <p style={{ fontSize: 13.5, color: 'var(--navy-500)', textAlign: 'center', margin: '0 0 32px', lineHeight: 1.65, maxWidth: 260 }}>
-        เพื่อเข้าใช้งานระบบ AML Screening สำหรับพนักงาน กรุณาเข้าสู่ระบบด้วยบัญชี LINE ของคุณ
+
+      <h1 style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 800, color: 'var(--navy)', margin: '0 0 10px', letterSpacing: '-0.02em', textAlign: 'center' }}>
+        ยังไม่มีสิทธิ์เข้าใช้งาน
+      </h1>
+      <p style={{ fontSize: 13.5, color: 'var(--navy-500)', textAlign: 'center', margin: '0 0 22px', lineHeight: 1.65, maxWidth: 270 }}>
+        บัญชี LINE นี้ยังไม่ได้เปิดใช้งาน CHECKNAME กรุณาสมัครหรือทดลองใช้ฟรีก่อนเริ่มต้น
       </p>
-      <button onClick={() => ctx.handleLineLogin()} style={{ width: '100%', maxWidth: 300, padding: '15px 20px', background: 'var(--line-green)', color: '#fff', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', fontFamily: 'var(--sans)', boxShadow: '0 6px 20px rgba(6,199,85,0.3)' }}>
-        <LineLogo size={22}/>
-        เข้าสู่ระบบด้วย LINE
-      </button>
-      <div style={{ marginTop: 18, padding: '10px 16px', background: 'var(--navy-50)', borderRadius: 10, display: 'flex', gap: 8, alignItems: 'flex-start', maxWidth: 300, width: '100%' }}>
-        <svg width="14" height="14" viewBox="0 0 16 16" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="8" cy="8" r="7" stroke="var(--navy-300)" strokeWidth="1.3" fill="none"/><path d="M8 4.5 V8.5 M8 11 V11.1" stroke="var(--navy-300)" strokeWidth="1.5" strokeLinecap="round"/></svg>
-        <span style={{ fontSize: 11.5, color: 'var(--navy-400)', lineHeight: 1.55 }}>เฉพาะพนักงานที่ได้รับสิทธิ์จากเจ้าของร้านเท่านั้น</span>
-      </div>
-    </div>
-  </div>
-);
 
-const AuthUnauthorized = ({ ctx }) => (
-  <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-    <div style={{ padding: '32px 24px 28px', background: 'linear-gradient(160deg, #0F172A 0%, #1E293B 100%)', display: 'flex', alignItems: 'center', gap: 10 }}>
-      <LogoMark size={22} color="#fff"/>
-      <span style={{ fontFamily: 'var(--display)', fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>CHECKNAME</span>
-    </div>
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '36px 28px 100px', background: 'var(--paper)' }}>
-      <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--red-50)', border: '1.5px solid #FCA5A5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="var(--red)" strokeWidth="2"/><path d="M5 5 L19 19" stroke="var(--red)" strokeWidth="2.4" strokeLinecap="round"/></svg>
-      </div>
-      <h1 style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 800, color: 'var(--navy)', margin: '0 0 14px', letterSpacing: '-0.02em', textAlign: 'center' }}>ไม่มีสิทธิ์เข้าถึง</h1>
-
+      {/* LINE profile card */}
       {ctx.liffProfile && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--white)', border: '1px solid var(--gray-line)', borderRadius: 14, width: '100%', maxWidth: 300, marginBottom: 18 }}>
-          {ctx.liffProfile.pictureUrl && <img src={ctx.liffProfile.pictureUrl} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}/>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--white)', border: '1px solid var(--gray-line)', borderRadius: 14, width: '100%', maxWidth: 300, marginBottom: 22 }}>
+          {ctx.liffProfile.pictureUrl && (
+            <img src={ctx.liffProfile.pictureUrl} style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onError={(e) => e.target.style.display='none'}/>
+          )}
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ctx.liffProfile.displayName}</div>
-            <div style={{ fontSize: 11, color: 'var(--navy-400)', fontFamily: 'var(--mono)', marginTop: 2 }}>{(ctx.liffProfile.userId || '').slice(0,18)}…</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ctx.liffProfile.displayName}</div>
+            <div style={{ fontSize: 10.5, color: 'var(--navy-400)', fontFamily: 'var(--mono)', marginTop: 3 }}>
+              LINE UID: {(ctx.liffProfile.userId || '').slice(0, 16)}…
+            </div>
           </div>
         </div>
       )}
 
-      <p style={{ fontSize: 13.5, color: 'var(--navy-500)', textAlign: 'center', margin: '0 0 18px', lineHeight: 1.65, maxWidth: 280 }}>
-        บัญชี LINE นี้ยังไม่ได้รับสิทธิ์การใช้งานระบบ AML Screening
-      </p>
-      <div style={{ width: '100%', maxWidth: 300, padding: '14px 16px', background: 'var(--amber-50)', border: '1px solid #FCD34D', borderRadius: 12, display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, color: '#92400E', lineHeight: 1.55, marginBottom: 28 }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><path d="M12 3 L22 20 H2 Z" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinejoin="round"/><path d="M12 10 V14 M12 17 V17.1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-        <span>กรุณาติดต่อเจ้าของร้านหรือผู้ดูแลระบบเพื่อขอรับสิทธิ์การใช้งาน</span>
+      {/* CTA buttons */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 300 }}>
+        <button onClick={() => window.location.href = '/trial'} style={{
+          width: '100%', padding: '15px 20px',
+          background: 'var(--emerald)', color: '#fff',
+          border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          cursor: 'pointer', fontFamily: 'var(--sans)',
+          boxShadow: '0 6px 20px rgba(16,185,129,0.25)',
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2 L15 9 L22 9 L16.5 14 L18.5 21 L12 17 L5.5 21 L7.5 14 L2 9 L9 9 Z" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinejoin="round"/></svg>
+          ทดลองใช้ฟรี
+        </button>
+
+        <button onClick={() => window.location.href = '/subscription'} style={{
+          width: '100%', padding: '15px 20px',
+          background: 'var(--white)', color: 'var(--navy)',
+          border: '1.5px solid var(--navy-200)', borderRadius: 14, fontSize: 15, fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          cursor: 'pointer', fontFamily: 'var(--sans)',
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" fill="none"/><path d="M2 10 H22" stroke="currentColor" strokeWidth="1.8"/><path d="M6 15 H10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          ดูแพลนและชำระเงิน
+        </button>
       </div>
-      <button onClick={() => ctx.handleLogout()} style={{ padding: '12px 28px', background: 'var(--white)', border: '1px solid var(--navy-200)', borderRadius: 12, fontSize: 14, fontWeight: 600, color: 'var(--navy-500)', cursor: 'pointer', fontFamily: 'var(--sans)' }}>
-        ออกจากระบบ
+
+      <div style={{ marginTop: 24, padding: '10px 16px', background: 'var(--navy-50)', borderRadius: 10, display: 'flex', gap: 8, alignItems: 'flex-start', maxWidth: 300, width: '100%' }}>
+        <svg width="14" height="14" viewBox="0 0 16 16" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="8" cy="8" r="7" stroke="var(--navy-300)" strokeWidth="1.3" fill="none"/><path d="M8 4.5 V8.5 M8 11 V11.1" stroke="var(--navy-300)" strokeWidth="1.5" strokeLinecap="round"/></svg>
+        <span style={{ fontSize: 11.5, color: 'var(--navy-400)', lineHeight: 1.55 }}>มีบัญชีอยู่แล้ว? ติดต่อผู้ดูแลระบบเพื่อเปิดสิทธิ์การใช้งาน</span>
+      </div>
+    </div>
+
+    {/* sticky bottom — แสดง CTA ซ้ำสำหรับ scroll */}
+    <div style={{ position: 'absolute', bottom: 34, left: 0, right: 0, padding: '14px 24px 16px', background: 'linear-gradient(180deg, rgba(250,251,252,0) 0%, var(--paper) 30%)', zIndex: 10 }}>
+      <button onClick={() => window.location.href = '/trial'} style={{ width: '100%', padding: '14px', background: 'var(--emerald)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
+        ทดลองใช้ฟรี — ไม่ต้องใช้บัตรเครดิต
       </button>
     </div>
   </div>
@@ -340,9 +366,8 @@ const AuthUnauthorized = ({ ctx }) => (
 /* ═══════════════════ AML SCREENING ═══════════════════ */
 
 const AML_PHASES = [
-  { id: 'authLoading',      label: '⏳ Loading',     en: 'Auth Loading' },
-  { id: 'authLogin',        label: '🔑 LINE Login',  en: 'LINE Login' },
-  { id: 'authUnauthorized', label: '🚫 ไม่มีสิทธิ์', en: 'Unauthorized' },
+  { id: 'authLoading', label: '⏳ Loading',  en: 'Auth Loading' },
+  { id: 'authBlocked', label: '🔒 Blocked',  en: 'Not Subscribed' },
   { id: 'home',       label: 'หน้าหลัก',     en: 'Home' },
   { id: 'quotaBlock', label: 'Quota หมด',    en: 'Quota Block' },
   { id: 'custType',   label: 'ประเภทลูกค้า',  en: 'Customer Type' },
@@ -423,16 +448,15 @@ const PhaseNav = ({ phases, current, onSelect }) => (
 );
 
 /* ─── Shell ─── */
-const AUTH_PHASES = ['authLoading','authLogin','authUnauthorized'];
+const AUTH_PHASES = ['authLoading','authBlocked'];
 
 const AmlShell = ({ ctx }) => {
   const isAuth = AUTH_PHASES.includes(ctx.phase);
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       {/* Auth screens — no status-bar spacer, no LIFF header */}
-      {ctx.phase === 'authLoading'      && <AuthLoading/>}
-      {ctx.phase === 'authLogin'        && <AuthLogin ctx={ctx}/>}
-      {ctx.phase === 'authUnauthorized' && <AuthUnauthorized ctx={ctx}/>}
+      {ctx.phase === 'authLoading' && <AuthLoading/>}
+      {ctx.phase === 'authBlocked' && <AuthBlocked ctx={ctx}/>}
 
       {/* AML screens — with status-bar spacer + LIFF header */}
       {!isAuth && (
@@ -1226,30 +1250,21 @@ const App = () => {
   const initAuth = async () => {
     try {
       if (typeof liff === 'undefined' || !liff.init) {
-        setPhase('home'); return; // dev mode fallback
+        setPhase('home'); return; // dev/preview mode
       }
       await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) {
-        setPhase('authLogin'); return;
+        liff.login(); // redirect to LINE login — page reloads after
+        return;
       }
       const profile = await liff.getProfile();
       setLiffProfile(profile);
-      const ok = await checkSubscription(profile.userId);
-      setPhase(ok ? 'home' : 'authUnauthorized');
+      const subscribed = await checkSubscription(profile.userId);
+      setPhase(subscribed ? 'home' : 'authBlocked');
     } catch (e) {
       console.warn('LIFF init failed, entering preview mode:', e);
       setPhase('home');
     }
-  };
-
-  const handleLineLogin = () => {
-    if (typeof liff !== 'undefined') liff.login();
-  };
-
-  const handleLogout = () => {
-    if (typeof liff !== 'undefined' && liff.isLoggedIn()) liff.logout();
-    setLiffProfile(null);
-    setPhase('authLogin');
   };
 
   const ctx = {
@@ -1259,7 +1274,7 @@ const App = () => {
     quotaUsed, setQuotaUsed, QUOTA,
     onExit: () => {},
     ocrConfOverride, riskOverride,
-    liffProfile, handleLineLogin, handleLogout,
+    liffProfile,
   };
 
   return (
