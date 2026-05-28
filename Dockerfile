@@ -1,6 +1,14 @@
-FROM python:3.12-slim AS base
+FROM node:20-alpine AS base
+
 WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
 COPY . .
 
 FROM base AS development
-CMD ["python", "app.py"]
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]
