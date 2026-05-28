@@ -1,0 +1,4 @@
+include:
+  - project: 'gitlab-ci-template/frameworks'
+    ref: main
+    file: '/dev-preview/dev-preview.yml'
